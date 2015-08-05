@@ -1,0 +1,28 @@
+{
+  "name": "ansi-tokenize",
+  "version": "0.1.0",
+  "description": "transform stream to parse ansi art into control codes",
+  "main": "index.js",
+  "dependencies": {
+    "stream-combiner2": "^1.0.2",
+    "split": "^1.0.0",
+    "through2": "^2.0.0"
+  },
+  "devDependencies": {
+    "tap": "^1.3.2"
+  },
+  "scripts": {
+    "test": "tap test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tetsuo/ansi-tokenize.git"
+  },
+  "keywords": [ "ansi", "art", "parser", "stream", "vt100", "lsd" ],
+  "author": "Onur Gunduz <ogunduz@gmail.com> (http://onurgunduz.com)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tetsuo/ansi-tokenize/issues"
+  },
+  "homepage": "https://github.com/tetsuo/ansi-tokenize#readme"
+}
