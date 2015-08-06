@@ -1,8 +1,7 @@
-var through = require('through2'),
-    split = require('split'),
-    combine = require('stream-combiner2');
+var through = require('through2');
 
-var commands = { // http://www.vt100.net/docs/vt510-rm/chapter5
+// http://www.vt100.net/docs/vt510-rm/chapter5
+var actions = {
   'A': 'cuu',    // cursor up
   'B': 'cud',    // cursor down
   'C': 'cuf',    // cursor forward
@@ -15,37 +14,47 @@ var commands = { // http://www.vt100.net/docs/vt510-rm/chapter5
   'J': 'ed'      // erase in display
 };
 
-module.exports = function () {
+module.exports = tokenize;
 
-  return combine(split(), tokenize());
+function tokenize () {
+  var re = /(?:\x1b\x5b)([\?=;0-9]*?)([ABCDfHsumJ])/g,
+      buf = '';
 
-  function tokenize () {
-    var re = /(?:\x1b\x5b)([\?=;0-9]*?)([ABCDfHsumJ])/g;
+  return through.obj(write, flush);
 
-    return through.obj(function (row, enc, cb) {
-      var i = 0, m, params,
-          row = row.toString();
+  function write (row, enc, cb) {
+    var m, i, args;
 
-      row = row.split(String.fromCharCode(0x1a), 1)[0];
+    buf += Buffer.isBuffer(row) ? row.toString('binary') : row;
 
-      do {
-        i = re.lastIndex;
-        m = re.exec(row);
+    do {
+      i = re.lastIndex;
+      m = re.exec(buf);
 
-        if (m !== null) {
-          if (m.index > i)
-            this.push([ 'literal', row.slice(i, m.index) ]);
-          if (commands.hasOwnProperty(m[2]))
-            this.push([ 'command', commands[m[2]], m[1].split(';').map(toint) ]);
+      if (m !== null) {
+        if (m.index > i) {
+          args = buf.slice(i, m.index);
+          this.push([ 'text', args ]);
+          this.emit('text', args);
         }
-      } while (re.lastIndex !== 0);
 
-      if (i < row.length)
-        this.push([ 'literal', row.slice(i) ]);
+        if (actions.hasOwnProperty(m[2])) {
+          args = m[1].split(';').map(int);
+          this.push([ 'code', m[2], args ]);
+          this.emit(actions[m[2]], args);
+        }
+      }
+    } while (re.lastIndex !== 0);
 
-      cb();
-    });
+    buf = buf.slice(i);
+    cb();
   }
+
+  function flush (cb) {
+    if (buf.length)
+      this.push([ 'text', buf ]);
+    cb();
+  };
 };
 
-function toint (s) { return parseInt(s, 10) }
+function int (s) { return parseInt(s, 10) }
